@@ -21,9 +21,25 @@ go install github.com/pgfeng/annotation@latest
 ## Usage
 Use the package build gin web framework route annotation:
 
+### Example Annotation in Handler File
 ```go
-package main
+// @Route /account/info get
+// @Summary Get Current User Info
+// @Description Get the information of the currently logged-in user.
+// @FormParam name="username" required=true summary="Username"
+// @FormParam name="password" required=true summary="Password"
+// @Tags Account User
+// @Rules AuthRequired
+func Info(c *gin.Context) {
+    c.JSON(200, gin.H{
+    "status": false,
+    "msg":    "Not logged in!",
+    })
+}
+```
 
+### Generating Routes File
+```go
 import (
 	"context"
 	"fmt"
