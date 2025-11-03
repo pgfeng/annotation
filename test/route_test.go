@@ -14,7 +14,7 @@ func TestParseRoute(t *testing.T) {
 		{input: "/api/v1/users GET", expected: types.Route{Path: "/api/v1/users", Method: "GET"}},
 		{input: "/api/v1/users post", expected: types.Route{Path: "/api/v1/users", Method: "POST"}},
 		{input: "/api/v1/users OPTIONS", expected: types.Route{Path: "/api/v1/users", Method: "OPTIONS"}},
-		{input: "/api/{d+}/users OPTIONS", expected: types.Route{Path: "/api/v1/users", Method: "OPTIONS"}},
+		{input: "/api/{version}/users OPTIONS", expected: types.Route{Path: "/api/v1/users", Method: "OPTIONS"}},
 		{input: "/api/v1/users", expected: types.Route{Path: "/api/v1/users", Method: "GET"}},
 		{input: "/api/v1/users   DELETE ", expected: types.Route{Path: "/api/v1/users", Method: "DELETE"}},
 		{input: "", expected: types.Route{Path: "/", Method: "GET"}},

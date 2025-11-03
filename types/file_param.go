@@ -1,12 +1,27 @@
 package types
 
-import "github.com/pgfeng/annotation/pkg"
+import (
+	"strconv"
+
+	"github.com/pgfeng/annotation/pkg"
+)
 
 type FileParam struct {
 	Name       string
 	IsRequired bool
 	Default    string
 	Summary    string
+	Type       string
+}
+
+func (p *FileParam) ToMap() map[string]string {
+	return map[string]string{
+		"name":        p.Name,
+		"is_required": strconv.FormatBool(p.IsRequired),
+		"default":     p.Default,
+		"summary":     p.Summary,
+		"type":        p.Type,
+	}
 }
 
 func (p *FileParam) GetName() string {
@@ -18,14 +33,15 @@ func (p *FileParam) Copy() pkg.Type {
 		IsRequired: p.IsRequired,
 		Default:    p.Default,
 		Summary:    p.Summary,
+		Type:       p.Type,
 	}
 }
 
-// InitValue 解析：@QueryParam name="名称", required=true, default="默认值", summary="参数简介"
-// 支持值用双引号并且忽略引号内的逗号
+// InitValue Parse：@QueryParam name="名称", required=true, default="默认值", summary="参数简介"
+// Supports values enclosed in double quotes and ignores commas within quotes
 func (p *FileParam) InitValue(v string) {
-	// 先设置默认值
-	param := Param{
+	// Set default values first
+	param := param{
 		ParamType: ParamTypeForm,
 	}
 	param.InitValue(v)
@@ -33,4 +49,5 @@ func (p *FileParam) InitValue(v string) {
 	p.IsRequired = param.IsRequired
 	p.Default = param.Default
 	p.Summary = param.Summary
+	p.Type = param.Type
 }

@@ -1,6 +1,8 @@
 package types
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
 	"strings"
 
 	"github.com/pgfeng/annotation/pkg"
@@ -26,6 +28,15 @@ func (m Method) String() string {
 type Route struct {
 	Path   string
 	Method Method
+	Hash   string
+}
+
+func (r *Route) ToMap() map[string]string {
+	return map[string]string{
+		"path":   r.Path,
+		"method": r.Method.String(),
+		"hash":   r.Hash,
+	}
 }
 
 // GetName GetType 返回注解类型
@@ -47,6 +58,8 @@ func (r *Route) InitValue(v string) {
 	if len(parts) == 0 {
 		r.Path = ""
 		r.Method = "GET"
+		sum := sha1.Sum([]byte(r.Method.String() + ":" + r.Path))
+		r.Hash = hex.EncodeToString(sum[:])
 		return
 	}
 
@@ -55,13 +68,16 @@ func (r *Route) InitValue(v string) {
 	if isHTTPMethod(last) && len(parts) > 1 {
 		r.Method = Method(last)
 		r.Path = strings.Join(parts[:len(parts)-1], " ")
+		sum := sha1.Sum([]byte(r.Method.String() + ":" + r.Path))
+		r.Hash = hex.EncodeToString(sum[:])
 		return
 	}
 
 	// 否则全部作为 Path，默认 Method 为 GET
-	r.Path = strings.Join(parts, " ")
+	r.Path = strings.Join(parts, "")
 	r.Method = "GET"
-	//fmt.Println("RouteInit", r.Path)
+	sum := sha1.Sum([]byte(r.Method.String() + ":" + r.Path))
+	r.Hash = hex.EncodeToString(sum[:])
 }
 
 func isHTTPMethod(s string) bool {

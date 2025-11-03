@@ -1,16 +1,19 @@
 package types
 
 import (
-	"crypto/sha1"
-	"encoding/hex"
 	"strings"
 
 	"github.com/pgfeng/annotation/pkg"
 )
 
 type Rules struct {
-	tags []string
-	hash string
+	Rules []string
+}
+
+func (s *Rules) ToMap() map[string]string {
+	return map[string]string{
+		"rules": strings.Join(s.Rules, ","),
+	}
 }
 
 func (s *Rules) GetName() string {
@@ -22,8 +25,7 @@ func (s *Rules) Copy() pkg.Type {
 		return &Rules{}
 	}
 	return &Rules{
-		tags: append([]string{}, s.tags...),
-		hash: s.hash,
+		Rules: append([]string{}, s.Rules...),
 	}
 }
 
@@ -39,7 +41,5 @@ func (s *Rules) InitValue(v string) {
 			}
 		}
 	}
-	sum := sha1.Sum([]byte(strings.Join(finalParts, ",")))
-	s.hash = hex.EncodeToString(sum[:])
-	s.tags = finalParts
+	s.Rules = finalParts
 }

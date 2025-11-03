@@ -13,20 +13,46 @@ type Type interface {
 	GetName() string
 	InitValue(v string)
 	Copy() Type
+	ToMap() map[string]string
 }
-
 type Annotation struct {
 	Name     string
 	Value    string
 	Instance Type
 }
 
-func (a Annotation) GetName() string {
-	return a.Name
+type Annotations []*Annotation
+
+// Get returns the annotation for the given Type, or nil if not found.
+func (ans Annotations) Get(t Type) *Annotation {
+	for i := range ans {
+		if reflect.TypeOf(ans[i].Instance) == reflect.TypeOf(t) {
+			return ans[i]
+		}
+	}
+	return nil
 }
 
-func (a Annotation) GetValue() string {
-	return a.Value
+func (ans Annotations) Filter(t Type) Annotations {
+	var result Annotations
+	for i := range ans {
+		if reflect.TypeOf(ans[i].Instance) == reflect.TypeOf(t) {
+			result = append(result, ans[i])
+		}
+	}
+	return result
+}
+
+// GetFunctionMap returns a map of functions to their annotations.
+func (f PackageFunctions) GetFunctionMap() FunctionAnnotations {
+	var result FunctionAnnotations = make(map[Function]Annotations)
+	for i := range f {
+		result[Function{
+			PackageName:  f[i].PackageName,
+			FunctionName: f[i].FunctionName,
+		}] = f[i].Annotations
+	}
+	return result
 }
 
 type PackageFunctions []PackageFunction
@@ -88,12 +114,37 @@ func (f PackageFunctions) GetImportSpecs() (importSpecs []ast.Spec) {
 	return importSpecs
 }
 
+// Function represents a function with its package and name.
+type Function struct {
+	PackageName  string
+	FunctionName string
+}
+
+// FunctionAnnotations maps functions to their annotations.
+type FunctionAnnotations map[Function]Annotations
+
+// GetAnnotation returns the annotation for the given Type, or nil if not found.
+func (ans FunctionAnnotations) GetAnnotation(t Type) *Annotation {
+	for a, f := range ans {
+		if reflect.DeepEqual(t, a) {
+			for i := 0; i < len(f); i++ {
+				if reflect.DeepEqual(t, f[i].Instance) {
+					return f[i]
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// PackageFunction represents a function within a package along with its annotations.
 type PackageFunction struct {
 	PackageName  string
 	FunctionName string
-	Annotations  []*Annotation
+	Annotations  Annotations
 }
 
+// Find returns the annotation instance for the given Type, or nil if not found.
 func (f *PackageFunction) Find(p Type) *Type {
 	for i := range f.Annotations {
 		if reflect.DeepEqual(f.Annotations[i].Instance, p) {
@@ -103,12 +154,14 @@ func (f *PackageFunction) Find(p Type) *Type {
 	return nil
 }
 
+// GetImportSpec Get AST Import Spec
 func (f *PackageFunction) GetImportSpec() *ast.ImportSpec {
 	return &ast.ImportSpec{
 		Path: &ast.BasicLit{Kind: token.STRING, Value: fmt.Sprintf(`"%s"`, f.PackageName)},
 	}
 }
 
+// NewAnnotation creates a new Annotation from the given Type and annotation text.
 func NewAnnotation(t Type, annotationTxt string) *Annotation {
 	parts := strings.Fields(strings.TrimSpace(annotationTxt))
 	if len(parts) == 0 {

@@ -9,8 +9,17 @@ import (
 )
 
 type Tags struct {
-	tags []string
-	hash string
+	Tags   []string
+	Hashes []string // each tag's hash
+	Hash   string   // overall hash
+}
+
+func (s *Tags) ToMap() map[string]string {
+	return map[string]string{
+		"tags":   strings.Join(s.Tags, ","),
+		"hashes": strings.Join(s.Hashes, ","),
+		"hash":   s.Hash,
+	}
 }
 
 func (s *Tags) GetName() string {
@@ -22,24 +31,29 @@ func (s *Tags) Copy() pkg.Type {
 		return &Tags{}
 	}
 	return &Tags{
-		tags: append([]string{}, s.tags...),
-		hash: s.hash,
+		Tags:   append([]string{}, s.Tags...),
+		Hashes: append([]string{}, s.Hashes...),
+		Hash:   s.Hash,
 	}
 }
 
 func (s *Tags) InitValue(v string) {
 	parts := strings.Fields(v)
 	var finalParts []string
+	var hashes []string
 	for _, part := range parts {
 		subParts := strings.Split(part, ",")
 		for _, subPart := range subParts {
 			trimmed := strings.TrimSpace(subPart)
 			if trimmed != "" {
+				sum := sha1.Sum([]byte(trimmed))
+				hashes = append(hashes, hex.EncodeToString(sum[:]))
 				finalParts = append(finalParts, trimmed)
 			}
 		}
 	}
 	sum := sha1.Sum([]byte(strings.Join(finalParts, ",")))
-	s.hash = hex.EncodeToString(sum[:])
-	s.tags = finalParts
+	s.Hash = hex.EncodeToString(sum[:])
+	s.Hashes = hashes
+	s.Tags = finalParts
 }

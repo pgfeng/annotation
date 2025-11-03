@@ -6,11 +6,17 @@ type Description struct {
 	Text string
 }
 
+func (d *Description) ToMap() map[string]string {
+	return map[string]string{
+		"text": d.Text,
+	}
+}
+
 func (d *Description) GetName() string {
 	return "Description"
 }
 
-// InitValue 解析：@Description 详细描述内容
+// InitValue Parse：@Description this is a description text
 func (d *Description) InitValue(v string) {
 	d.Text = v
 }

@@ -1,9 +1,17 @@
 package types
 
-import "github.com/pgfeng/annotation/pkg"
+import (
+	"github.com/pgfeng/annotation/pkg"
+)
 
 type Summary struct {
 	Text string
+}
+
+func (p *Summary) ToMap() map[string]string {
+	return map[string]string{
+		"text": p.Text,
+	}
 }
 
 func (s *Summary) GetName() string {

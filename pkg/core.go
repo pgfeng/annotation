@@ -1,7 +1,6 @@
 package pkg
 
 import (
-	"fmt"
 	"go/ast"
 	"go/token"
 	"regexp"
@@ -10,9 +9,7 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-// LoadPackageByPath 加载包并从函数/方法的注释中解析注解。
-// 返回值映射格式： map[methodKey]map[annotationName][]values
-// methodKey 形如 "Type.Method"（方法）或 "Package.Func"（普通函数，使用包路径作为前缀）
+// LoadPackageByPath Load package and parse annotations from function/method comments.
 func LoadPackageByPath(s string, t []Type) *PackageFunctions {
 	cfg := &packages.Config{
 		Mode: packages.NeedName | packages.NeedFiles | packages.NeedSyntax | packages.NeedTypes,
@@ -26,13 +23,14 @@ func LoadPackageByPath(s string, t []Type) *PackageFunctions {
 	for _, pkg := range packageLists {
 		pkgPath := pkg.PkgPath
 		for _, f := range pkg.Syntax {
-			// 遍历声明，寻找函数声明
+			// range over declarations to find function declarations
 			for _, decl := range f.Decls {
 				fd, ok := decl.(*ast.FuncDecl)
 				if !ok {
 					continue
 				}
 				// 构造 methodKey
+				//
 				var methodKey string
 				methodKey = pkg.Name + "." + fd.Name.Name
 				// 收集注释文本（使用 FuncDecl.Doc）
@@ -89,38 +87,5 @@ func LoadPackageByPath(s string, t []Type) *PackageFunctions {
 			}
 		}
 	}
-	//for _, fn := range result {
-	//	fmt.Println(fn)
-	//	for _, at := range fn.Annotations {
-	//		fmt.Println(at)
-	//	}
-	//}
 	return &result
-}
-func ClonePointer[T any](src *T) *T {
-	if src == nil {
-		return nil
-	}
-	tmp := *src // 复制值
-	return &tmp // 返回指向新值的指针
-}
-
-// 辅助：把 ast.Expr 转成简单的类型名，例如:
-//
-//	*ast.Ident -> ident.Name
-//	*ast.StarExpr -> 递归取内部（去掉指针符号）
-//	*ast.SelectorExpr -> sel.Sel.Name
-func exprToString(e ast.Expr) string {
-	switch v := e.(type) {
-	case *ast.Ident:
-		return v.Name
-	case *ast.StarExpr:
-		return exprToString(v.X)
-	case *ast.SelectorExpr:
-		// 例如 pkg.Type -> 返回 Type（去掉包前缀）
-		return v.Sel.Name
-	default:
-		// 回退为 fmt.Sprintf 表示的形式（尽量避免）
-		return fmt.Sprintf("%T", e)
-	}
 }

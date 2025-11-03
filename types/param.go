@@ -7,11 +7,12 @@ import (
 	"github.com/pgfeng/annotation/pkg"
 )
 
-type Param struct {
+type param struct {
 	Name       string
 	IsRequired bool
 	Default    string
 	Summary    string
+	Type       string
 	ParamType  ParamType
 }
 type ParamType string
@@ -46,27 +47,41 @@ func ParseParamType(s ParamType) ParamType {
 		return ParamTypeQuery
 	}
 }
-func (p *Param) New(paramType ParamType) {
+func (p *param) New(paramType ParamType) {
 	p.ParamType = ParseParamType(paramType)
 }
-func (p *Param) GetName() string {
+func (p *param) ToMap() map[string]string {
+	return map[string]string{
+		"name":        p.Name,
+		"is_required": strconv.FormatBool(p.IsRequired),
+		"default":     p.Default,
+		"summary":     p.Summary,
+		"paramType":   string(p.ParamType),
+		"type":        p.Type,
+	}
+}
+
+func (p *param) GetName() string {
 	return "Param"
 }
-func (p *Param) Copy() pkg.Type {
-	return &Param{
+func (p *param) Copy() pkg.Type {
+	return &param{
 		Name:       p.Name,
 		IsRequired: p.IsRequired,
 		Default:    p.Default,
 		Summary:    p.Summary,
+		ParamType:  p.ParamType,
+		Type:       p.Type,
 	}
 }
 
 // InitValue 解析：@Param name="名称", type="query", required=true, default="默认值", summary="参数简介"
-func (p *Param) InitValue(v string) {
+func (p *param) InitValue(v string) {
 	// 先设置默认值
 	p.IsRequired = false
 	p.Default = ""
 	p.Summary = ""
+	p.Type = "string"
 	if p.ParamType == "" {
 		p.ParamType = ParseParamType(ParamType(v))
 	}
@@ -85,60 +100,63 @@ func (p *Param) InitValue(v string) {
 			p.IsRequired = b
 		}
 	}
-	if pType, ok := m["type"]; ok {
+	if pType, ok := m["paramType"]; ok {
 		p.ParamType = ParseParamType(ParamType(pType))
 	}
+	if t, ok := m["type"]; ok {
+		p.Type = t
+	}
 }
-func (p *Param) getInstance() {
-	switch p.ParamType {
+func (ps *param) getInstance() {
+	switch ps.ParamType {
 	case ParamTypePath:
 		p := &PathParam{}
-		p.Name = p.Name
-		p.IsRequired = p.IsRequired
-		p.Default = p.Default
-		p.Summary = p.Summary
+		p.Name = ps.Name
+		p.IsRequired = ps.IsRequired
+		p.Default = ps.Default
+		p.Summary = ps.Summary
 		return
 	case ParamTypeQuery:
 		p := &QueryParam{}
-		p.Name = p.Name
-		p.IsRequired = p.IsRequired
-		p.Default = p.Default
-		p.Summary = p.Summary
+		p.Name = ps.Name
+		p.IsRequired = ps.IsRequired
+		p.Default = ps.Default
+		p.Summary = ps.Summary
 		return
 	case ParamTypeHeader:
 		p := &HeaderParam{}
-		p.Name = p.Name
-		p.IsRequired = p.IsRequired
-		p.Default = p.Default
-		p.Summary = p.Summary
+		p.Name = ps.Name
+		p.IsRequired = ps.IsRequired
+		p.Default = ps.Default
+		p.Summary = ps.Summary
 		return
 	case ParamTypeCookie:
 		p := &CookieParam{}
-		p.Name = p.Name
-		p.IsRequired = p.IsRequired
-		p.Default = p.Default
-		p.Summary = p.Summary
+		p.Name = ps.Name
+		p.IsRequired = ps.IsRequired
+		p.Default = ps.Default
+		p.Summary = ps.Summary
 		return
 	case ParamTypeForm:
 		p := &FormParam{}
-		p.Name = p.Name
-		p.IsRequired = p.IsRequired
-		p.Default = p.Default
-		p.Summary = p.Summary
+		p.Name = ps.Name
+		p.IsRequired = ps.IsRequired
+		p.Default = ps.Default
+		p.Summary = ps.Summary
 		return
 	case ParamTypeFile:
 		p := &FileParam{}
-		p.Name = p.Name
-		p.IsRequired = p.IsRequired
-		p.Default = p.Default
-		p.Summary = p.Summary
+		p.Name = ps.Name
+		p.IsRequired = ps.IsRequired
+		p.Default = ps.Default
+		p.Summary = ps.Summary
 		return
 	case ParamTypeBody:
 		p := &BodyParam{}
-		p.Name = p.Name
-		p.IsRequired = p.IsRequired
-		p.Default = p.Default
-		p.Summary = p.Summary
+		p.Name = ps.Name
+		p.IsRequired = ps.IsRequired
+		p.Default = ps.Default
+		p.Summary = ps.Summary
 		return
 	default:
 		return

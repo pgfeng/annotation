@@ -1,9 +1,19 @@
 package types
 
-import "github.com/pgfeng/annotation/pkg"
+import (
+	"strings"
+
+	"github.com/pgfeng/annotation/pkg"
+)
 
 type Accept struct {
 	MediaTypes []string
+}
+
+func (a *Accept) ToMap() map[string]string {
+	return map[string]string{
+		"Accept": strings.Join(a.MediaTypes, ", "),
+	}
 }
 
 func (a *Accept) Copy() pkg.Type {
@@ -18,9 +28,8 @@ func (a *Accept) GetName() string {
 	return "Accept"
 }
 
-// InitValue 解析：@Accept application/json, text/html
+// InitValue Parse：@Accept application/json, text/html
 func (a *Accept) InitValue(v string) {
-	// 按逗号分割并去除空格
 	var mediaTypes []string
 	start := 0
 	inQuotes := false
@@ -36,7 +45,6 @@ func (a *Accept) InitValue(v string) {
 			}
 		}
 	}
-	// 添加最后一个部分
 	if start < len(v) {
 		part := v[start:]
 		mediaTypes = append(mediaTypes, trimSpaces(part))

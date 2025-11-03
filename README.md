@@ -179,3 +179,119 @@ func GenerateRouteFile() {
 }
 
 ```
+
+### Generate Api Documentation
+```go
+
+type ApiPathItem struct {
+	Hash        string                 `json:"hash"`
+	Path        string                 `json:"path,omitempty"`
+	Method      string                 `json:"method,omitempty"`
+	Summary     string                 `json:"summary,omitempty"`
+	Description string                 `json:"description,omitempty"`
+	Accept      []string               `json:"accept,omitempty"`
+	ContentType string                 `json:"contentType,omitempty"`
+	Rules       []string               `json:"rules,omitempty"`
+	Tags        map[string]interface{} `json:"tags,omitempty"`
+	Parameters  []map[string]string    `json:"parameters,omitempty"`
+}
+
+type ApiDoc struct {
+	Paths []ApiPathItem `json:"api,omitempty"`
+}
+
+func GenerateApiJson() string {
+	funks := pkgFunks.GetFunctionMap()
+	fmt.Println("Generating api json...")
+	var apiDoc ApiDoc
+	for _, ans := range funks {
+		route := ans.Get(&types.Route{})
+		if route == nil {
+			continue
+		}
+		routeInstance := route.Instance.(*types.Route)
+		var pathItem ApiPathItem
+
+		path := routeInstance.Path
+		pathItem.Path = path
+		method := string(routeInstance.Method)
+		pathItem.Method = method
+		summary := ans.Get(&types.Summary{})
+		if summary != nil {
+			pathItem.Summary = summary.Instance.(*types.Summary).Text
+		}
+		description := ans.Get(&types.Description{})
+		if description != nil {
+			pathItem.Description = description.Instance.(*types.Description).Text
+		}
+		accept := ans.Get(&types.Accept{})
+		if accept != nil {
+			pathItem.Accept = accept.Instance.(*types.Accept).MediaTypes
+		} else {
+			pathItem.Accept = []string{"application/json"}
+		}
+		contentType := ans.Get(&types.ContentType{})
+		if contentType != nil {
+			pathItem.ContentType = contentType.Instance.(*types.ContentType).MediaType
+		}
+		rules := ans.Get(&types.Rules{})
+		if rules != nil {
+			pathItem.Rules = rules.Instance.(*types.Rules).Rules
+		}
+		tags := ans.Get(&types.Tags{})
+		if tags != nil {
+			pathItem.Tags = map[string]interface{}{
+				"tags":   tags.Instance.(*types.Tags).Tags,
+				"hashes": tags.Instance.(*types.Tags).Hashes,
+				"hash":   tags.Instance.(*types.Tags).Hash,
+			}
+		}
+		pathItem.Hash = routeInstance.Hash
+		// Parameters
+		var parameters []map[string]string
+		for _, pType := range []pkg.Type{
+			&types.PathParam{},
+			&types.QueryParam{},
+			&types.HeaderParam{},
+			&types.CookieParam{},
+			&types.FormParam{},
+			&types.BodyParam{},
+			&types.FileParam{},
+		} {
+			params := ans.Filter(pType)
+			if len(params) > 0 {
+				for _, p := range params {
+					v := reflect.ValueOf(p.Instance)
+					if v.IsValid() {
+						m := v.MethodByName("ToMap")
+						if m.IsValid() && m.Type().NumIn() == 0 {
+							out := m.Call(nil)
+							if len(out) > 0 {
+								if paramMap, ok := out[0].Interface().(map[string]string); ok {
+									paramMap["location"] = strings.TrimSuffix(reflect.TypeOf(p.Instance).Elem().Name(), "Param")
+									parameters = append(parameters, paramMap)
+								}
+							}
+
+						}
+					}
+				}
+			}
+		}
+		pathItem.Parameters = parameters
+		apiDoc.Paths = append(apiDoc.Paths, pathItem)
+	}
+	jsonData, err := json.MarshalIndent(apiDoc, "", "  ")
+	if err != nil {
+		slog.Log(context.Background(), slog.LevelError, "Failed to marshal API doc to JSON", "error", err)
+		panic("failed to marshal api doc to json")
+	}
+	err = os.WriteFile("./.document/doc.json", jsonData, 0644)
+	if err != nil {
+		slog.Log(context.Background(), slog.LevelError, "Failed to write API doc to file", "error", err)
+		panic("failed to write api doc to file")
+	}
+	slog.Log(context.Background(), slog.LevelInfo, "Generated api_doc.json")
+	return string(jsonData)
+}
+```
